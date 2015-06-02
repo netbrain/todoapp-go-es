@@ -7,7 +7,7 @@ To start the sample application, download and install golang. Then proceed with 
 ```
 go get github.com/netbrain/todoapp-go-es
 
-cd $GOPATH/github.com/netbrain/todoapp-go-es
+cd $GOPATH/src/github.com/netbrain/todoapp-go-es
 
 go build
 
