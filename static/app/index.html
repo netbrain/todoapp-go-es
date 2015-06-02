@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en" ng-app="todoapp">
+    <head>
+        <meta charset="utf-8">
+        <title>My TODO APP</title>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap-theme.min.css">
+        <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular.min.js"></script>
+        <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular-route.min.js"></script>
+        <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular-resource.js"></script>
+        <script src="https://cdn.rawgit.com/gdi2290/angular-websocket/v1.0.9/angular-websocket.min.js"></script>
+        <script src="scripts/app.js"></script>
+        <script src="scripts/ws/ws.js"></script>
+    </head>
+    <body>
+        <div class="container">
+            <ul class="nav nav-pills">
+                <li role="presentation"><a href="/#/">Home</a></li>
+                <li role="presentation"><a href="/#/todo">Todo's</a></li>
+                <li role="presentation"><a href="/#/todo/create">Create a todo</a></li>
+            </ul>
+            <div>Number of clients connected: {{numWsClients}}</div>
+            <div ng-view></div>
+        </div>
+    </body>
+</html>

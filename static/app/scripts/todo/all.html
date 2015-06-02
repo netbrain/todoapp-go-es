@@ -1,0 +1,25 @@
+<h1>All TODO's!</h1>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Done</th>
+            <th>Toolbar</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr ng-repeat="(id,todo) in todos">
+            <td>{{todo.name}}</td>
+            <td>
+                <div class="btn btn-default" ng-click="toggleCompleted(todo)">
+                    <span class="glyphicon" ng-class="todo.completed ? 'glyphicon-check' : 'glyphicon-unchecked'"></span>
+                </div>
+            </td>
+            <td>
+                <div class="btn btn-default" ng-click="show(todo)">Show</div>
+                <div class="btn btn-default" ng-click="edit(todo)">Edit</div>
+                <div class="btn btn-default" ng-click="remove(todo)">Remove</div>
+            </td>
+        </tr>
+    </tbody>
+</table>
