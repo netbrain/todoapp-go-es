@@ -16,11 +16,7 @@ type Projection struct {
 }
 
 //NewProjection creates a new Projection
-func NewProjection(bus event.Bus) *Projection {
-	datastore, err := fsstore.NewJSONFSStore("todo")
-	if err != nil {
-		panic(err)
-	}
+func NewProjection(bus event.Bus, datastore fsstore.FSStore) *Projection {
 	p := &Projection{
 		subscription: bus.Subscribe(
 			"TodoProjection",
@@ -52,10 +48,18 @@ func (p *Projection) handleTodoItemCreatedEvent(event *common.EventMessage) {
 	todo := new(Todo)
 	err := json.Unmarshal(*event.Data, todo)
 	if err != nil {
-		panic(err)
+		log.Print(err)
 	}
-	p.datastore.Set(todo.ID, todo)
-	p.datastore.AddToCollection("all", todo.ID, todo)
+
+	err = p.datastore.Set(todo.ID, todo)
+	if err != nil {
+		log.Print(err)
+	}
+
+	err = p.datastore.AddToCollection("all", todo.ID, todo)
+	if err != nil {
+		log.Print(err)
+	}
 }
 
 func (p *Projection) handleTodoItemRemovedEvent(event *common.EventMessage) {

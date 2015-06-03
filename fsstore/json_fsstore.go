@@ -1,16 +1,19 @@
 package fsstore
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
 	"runtime/debug"
+	"sync"
 )
 
 //JSONFSStore a store that encodes data to json and gzips it
 type JSONFSStore struct {
 	dataDir string
 	files   map[string]*jsonFile
+	mapLock *sync.RWMutex
 }
 
 //NewJSONFSStore creates a new JSONFSStore with a relative or absolute datadir path
@@ -22,6 +25,7 @@ func NewJSONFSStore(dataDir string) (*JSONFSStore, error) {
 	store := &JSONFSStore{
 		dataDir: dataDir,
 		files:   make(map[string]*jsonFile),
+		mapLock: &sync.RWMutex{},
 	}
 
 	store.RemoveAll()
@@ -56,6 +60,15 @@ func (j *JSONFSStore) Get(id string, v interface{}) error {
 		return err
 	}
 	return file.get(v)
+}
+
+//Get returns the raw data assosciated with a given id
+func (j *JSONFSStore) GetBytes(id string) (*bytes.Reader, error) {
+	file, err := j.getJsonFile(id)
+	if err != nil {
+		return nil, err
+	}
+	return file.getBytes()
 }
 
 //RemoveAll removes all files assosciated with this datastore
@@ -124,28 +137,42 @@ func (j *JSONFSStore) getCollection(file *jsonFile) (map[string]interface{}, err
 }
 
 func (j *JSONFSStore) getJsonFile(path string) (*jsonFile, error) {
-	if v, ok := j.files[path]; !ok {
-		file, err := os.OpenFile(
-			filepath.Join(j.dataDir, fmt.Sprintf("%s.json", path)),
-			os.O_RDWR|os.O_CREATE,
-			0644,
-		)
+	var err error
+	f := j.getCachedJsonFile(path)
+	if f == nil {
+		f, err = j.setCachedJsonFile(path)
+	}
+	return f, err
+}
 
-		if err != nil {
-			file.Close()
-			debug.PrintStack()
-			return nil, err
-		}
+func (j *JSONFSStore) getCachedJsonFile(path string) *jsonFile {
+	j.mapLock.RLock()
+	defer j.mapLock.RUnlock()
+	if v, ok := j.files[path]; ok && !v.isClosed() {
+		return v
+	}
+	return nil
 
-		f := newJsonFile(file)
+}
 
-		j.files[path] = f
+func (j *JSONFSStore) setCachedJsonFile(path string) (*jsonFile, error) {
+	j.mapLock.Lock()
+	defer j.mapLock.Unlock()
+	file, err := os.OpenFile(
+		filepath.Join(j.dataDir, fmt.Sprintf("%s.json", path)),
+		os.O_RDWR|os.O_CREATE,
+		0644,
+	)
 
-		return f, nil
-	} else {
-		return v, nil
+	if err != nil {
+		defer file.Close()
+		debug.PrintStack()
+		return nil, err
 	}
 
+	f := newJsonFile(file)
+	j.files[path] = f
+	return f, nil
 }
 
 func (j *JSONFSStore) Flush() {

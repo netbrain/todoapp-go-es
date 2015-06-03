@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 
 	"code.google.com/p/go-uuid/uuid"
@@ -41,10 +42,6 @@ func TestCanCreateAndGetAndRemove(t *testing.T) {
 		if err := fs.RemoveAll(); err != nil {
 			t.Fatal(err)
 		}
-
-		if _, err := os.Stat(dataDir); !os.IsNotExist(err) {
-			t.Fatal("Removed dir exists..")
-		}
 	}()
 
 	v := &struct{ A string }{}
@@ -78,7 +75,6 @@ func TestCollectionAddAndRemove(t *testing.T) {
 	}
 
 	fs.RemoveFromCollection(collectionName, id)
-	fs.Flush()
 
 	if stat, err := os.Stat(filepath.Join(dataDir, fmt.Sprintf("%s.json", collectionName))); os.IsNotExist(err) {
 		t.Fatal(err)
@@ -98,13 +94,21 @@ func TestAddSeveralToCollection(t *testing.T) {
 
 	collectionName := "test-collection"
 
+	var wg sync.WaitGroup
 	for x := 0; x < 10; x++ {
-		id := uuid.New()
-		err := fs.AddToCollection(collectionName, id, struct{ A string }{A: "Test"})
-		if err != nil {
-			t.Fatal(err)
-		}
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			id := uuid.New()
+			err := fs.AddToCollection(collectionName, id, struct{ A string }{A: "Test"})
+			if err != nil {
+				t.Fatal(err)
+			}
+		}()
 	}
+
+	wg.Wait()
+	fs.Stop()
 
 	m, err := fs.GetCollection(collectionName)
 	if err != nil {

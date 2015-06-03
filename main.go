@@ -25,9 +25,11 @@ var eventLogWriter io.Writer
 var eventLogReader io.Reader
 var eventRepository event.Repository
 var todoProjection *todo.Projection
+var todoDataStore fsstore.FSStore
 var staticPath string
 
 func init() {
+	//log.SetOutput(ioutil.Discard)
 	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
 		log.Fatal(err)
@@ -36,7 +38,13 @@ func init() {
 	fsstore.DataDir = filepath.Join(staticPath, "api")
 	eventBus = event.NewDefaultBus()
 	eventLogFile = filepath.Join(os.TempDir(), "eventlog")
-	todoProjection = todo.NewProjection(eventBus)
+
+	todoDataStore, err = fsstore.NewJSONFSStore("todo")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	todoProjection = todo.NewProjection(eventBus, todoDataStore)
 	eventLogWriter, _ = os.OpenFile(eventLogFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
 	eventLogReader, _ = os.Open(eventLogFile)
 	eventRepository = event.NewDefaultRepository(eventLogReader, eventLogWriter, eventBus)
@@ -81,7 +89,7 @@ func main() {
 			w.WriteHeader(http.StatusBadRequest)
 		}
 	})
-	http.Handle("/api/", http.FileServer(http.Dir(staticPath)))
+	http.Handle("/api/todo/", NewQueryHandler(todoDataStore))
 	http.Handle("/", http.FileServer(http.Dir(filepath.Join(staticPath, "app"))))
 	http.Handle("/ws/", websocket.Handler(wsHandler))
 
