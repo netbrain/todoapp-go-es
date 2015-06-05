@@ -5,6 +5,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -85,11 +86,17 @@ func main() {
 	http.Handle("/", http.FileServer(http.Dir(filepath.Join(staticPath, "app"))))
 	http.Handle("/ws/", websocket.Handler(wsHandler))
 
-	log.Println("Listening...")
+	addrs, _ := net.InterfaceAddrs()
+	for _, addr := range addrs {
+		log.Printf("Listening on interface: %s", addr.String())
+	}
+
+	log.Println("Listening on port 8080")
 	err := http.ListenAndServe(":8080", nil)
 	if err != nil {
 		panic("ListenAndServe: " + err.Error())
 	}
+
 }
 
 func wsHandler(conn *websocket.Conn) {
