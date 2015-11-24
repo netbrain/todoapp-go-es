@@ -25,3 +25,6 @@ go build
 and then if your environment has been correctly set up, you can now invoke the app with: 
 
 The application will then be listening @ http://localhost:8080
+
+
+Also check out my [dlog](http://github.com/netbrain/dlog) project
